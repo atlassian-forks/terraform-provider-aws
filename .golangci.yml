@@ -25,6 +25,7 @@ linters:
     - misspell
     - nakedret
     - nilerr
+    - nolintlint
     - staticcheck
     - structcheck
     - unconvert
