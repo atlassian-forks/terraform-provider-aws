@@ -2,6 +2,7 @@ package aws
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/kafkaconnect"
 	"log"
 	"strings"
 
@@ -310,6 +311,7 @@ type AWSClient struct {
 	iotanalyticsconn                    *iotanalytics.IoTAnalytics
 	ioteventsconn                       *iotevents.IoTEvents
 	kafkaconn                           *kafka.Kafka
+	kafkaconnectconn                    *kafkaconnect.KafkaConnect
 	kinesisanalyticsconn                *kinesisanalytics.KinesisAnalytics
 	kinesisanalyticsv2conn              *kinesisanalyticsv2.KinesisAnalyticsV2
 	kinesisconn                         *kinesis.Kinesis
