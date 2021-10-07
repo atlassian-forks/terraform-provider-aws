@@ -26,8 +26,15 @@ func resourceAwsMskConnector() *schema.Resource {
 			"connector_description": {
 				Type:     schema.TypeString,
 				Required: true,
-				ForceNew: false,
+				ForceNew: true,
 				Computed: false,
+			},
+			"connector_configuration": {
+				Type:     schema.TypeMap,
+				Required: true,
+				ForceNew: true,
+				Computed: false,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"mcu_count": {
 				Type:     schema.TypeInt,
@@ -43,14 +50,14 @@ func resourceAwsMskConnector() *schema.Resource {
 			},
 			"auth_type": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				Default:  kafkaconnect.KafkaClusterClientAuthenticationTypeIam,
 				ForceNew: false,
 				Computed: false,
 			},
 			"encryption_type": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				Default:  kafkaconnect.KafkaClusterEncryptionInTransitTypeTls,
 				ForceNew: false,
 				Computed: false,
@@ -60,49 +67,56 @@ func resourceAwsMskConnector() *schema.Resource {
 				Required: true,
 				ForceNew: false,
 				Computed: false,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"security_groups": {
 				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: false,
 				Computed: false,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"subnets": {
 				Type:     schema.TypeSet,
 				Required: true,
 				ForceNew: false,
 				Computed: false,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 			"kafka_connect_version": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				Default:  "TODO set current version",
 				ForceNew: true,
 				Computed: false,
 			},
 			"cw_log_group": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				ForceNew: false,
 				Computed: false,
+				Default:  nil,
 			},
 			"firehose_log_delivery_stream": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				ForceNew: false,
 				Computed: false,
+				Default:  nil,
 			},
 			"s3_log_bucket": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				ForceNew: false,
 				Computed: false,
+				Default:  nil,
 			},
 			"s3_log_prefix": {
 				Type:     schema.TypeString,
-				Required: false,
+				Optional: true,
 				ForceNew: false,
 				Computed: false,
+				Default:  nil,
 			},
 			"execution_role_arn": {
 				Type:     schema.TypeString,
@@ -112,9 +126,10 @@ func resourceAwsMskConnector() *schema.Resource {
 			},
 			"plugins_arns": {
 				Type:     schema.TypeSet,
-				Required: false,
+				Optional: true,
 				ForceNew: false,
 				Computed: false,
+				Elem:     &schema.Schema{Type: schema.TypeString},
 			},
 		},
 	}
@@ -173,6 +188,7 @@ func resourceAwsMskConnectorRead(_ context.Context, d *schema.ResourceData, meta
 		"s3_log_prefix":                c.LogDelivery.WorkerLogDelivery.S3.Prefix,
 		"execution_role_arn":           c.ServiceExecutionRoleArn,
 		"plugins_arns":                 c.ServiceExecutionRoleArn,
+		"connector_configuration":      c.ConnectorConfiguration,
 	}
 	for k, v := range fields {
 		err = d.Set(k, v)
