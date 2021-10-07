@@ -220,8 +220,8 @@ func resourceAwsMskConnectorUpdate(ctx context.Context, d *schema.ResourceData, 
 		return diag.FromErr(err)
 	}
 
-	mcuCount := d.Get("mcu_count").(int64)
-	workerCount := d.Get("worker_count").(int64)
+	mcuCount := int64(d.Get("mcu_count").(int))
+	workerCount := int64(d.Get("workers_count").(int))
 	input := &kafkaconnect.UpdateConnectorInput{
 		ConnectorArn:   aws.String(d.Id()),
 		CurrentVersion: currentPlugin.CurrentVersion,
@@ -268,56 +268,79 @@ func newCreateConnectorRequest(conn *kafkaconnect.KafkaConnect, d *schema.Resour
 	connectorName := d.Get("connector_name").(string)
 	connectorDescription := d.Get("connector_description").(string)
 
-	connectorConfiguration := d.Get("connector_configuration").(map[string]*string)
+	connectorConfigurationMap := d.Get("connector_configuration").(map[string]interface{})
+	connectorConfiguration := map[string]*string{}
+	for k, v := range connectorConfigurationMap {
+		val := v.(string)
+		connectorConfiguration[k] = &val
+	}
 
-	mcuCount := d.Get("mcu_count").(int64)
-	workerCount := d.Get("worker_count").(int64)
+	mcuCount := int64(d.Get("mcu_count").(int))
+	workerCount := int64(d.Get("workers_count").(int))
 
 	authType := d.Get("auth_type").(string)
 	encryptionType := d.Get("encryption_type").(string)
 
 	bootstrapServers := d.Get("bootstrap_servers").(string)
-	securityGroups := d.Get("security_groups").([]*string)
-	subnets := d.Get("subnets").([]*string)
+
+	securityGroupsSet := d.Get("security_groups").(*schema.Set)
+	var securityGroups []*string
+	for _, sg := range securityGroupsSet.List() {
+		sgStr := sg.(string)
+		securityGroups = append(securityGroups, &sgStr)
+	}
+
+	subnetsSet := d.Get("subnets").(*schema.Set)
+	var subnets []*string
+	for _, s := range subnetsSet.List() {
+		sStr := s.(string)
+		subnets = append(subnets, &sStr)
+	}
 
 	kafkaConnectVersion := d.Get("kafka_connect_version").(string)
 
-	roleArn := d.Get("execution_role_arn").(*string)
+	roleArn := d.Get("execution_role_arn").(string)
 
 	var workerConfiguration *kafkaconnect.WorkerConfiguration
 
-	pluginArns := d.Get("plugins_arns").([]string)
+	pluginArnsSet := d.Get("plugins_arns").(*schema.Set)
+	var pluginArns []string
+	for _, a := range pluginArnsSet.List() {
+		aStr := a.(string)
+		pluginArns = append(pluginArns, aStr)
+	}
+
 	plugins, err := loadCustomPlugins(conn, pluginArns)
 	if err != nil {
 		return nil, err
 	}
 
 	enabled := true
-	cwLogGroup := d.Get("cw_log_group").(*string)
+	cwLogGroup := d.Get("cw_log_group").(string)
 	var cloudWatchLogs *kafkaconnect.CloudWatchLogsLogDelivery
 	if &cwLogGroup != nil {
 		cloudWatchLogs = &kafkaconnect.CloudWatchLogsLogDelivery{
 			Enabled:  &enabled,
-			LogGroup: cwLogGroup,
+			LogGroup: &cwLogGroup,
 		}
 	}
 
-	firehoseLogDeliveryStream := d.Get("firehose_log_delivery_stream").(*string)
+	firehoseLogDeliveryStream := d.Get("firehose_log_delivery_stream").(string)
 	var firehose *kafkaconnect.FirehoseLogDelivery
-	if firehoseLogDeliveryStream != nil {
+	if &firehoseLogDeliveryStream != nil {
 		firehose = &kafkaconnect.FirehoseLogDelivery{
-			DeliveryStream: firehoseLogDeliveryStream,
+			DeliveryStream: &firehoseLogDeliveryStream,
 			Enabled:        &enabled,
 		}
 	}
 
-	s3LogBucket := d.Get("s3_log_bucket").(*string)
-	s3LogPrefix := d.Get("s3_log_prefix").(*string)
+	s3LogBucket := d.Get("s3_log_bucket").(string)
+	s3LogPrefix := d.Get("s3_log_prefix").(string)
 	var s3 *kafkaconnect.S3LogDelivery
-	if s3LogBucket != nil && s3LogPrefix != nil {
+	if &s3LogBucket != nil && &s3LogPrefix != nil {
 		s3 = &kafkaconnect.S3LogDelivery{
-			Bucket:  s3LogBucket,
-			Prefix:  s3LogPrefix,
+			Bucket:  &s3LogBucket,
+			Prefix:  &s3LogPrefix,
 			Enabled: &enabled,
 		}
 	}
@@ -356,7 +379,7 @@ func newCreateConnectorRequest(conn *kafkaconnect.KafkaConnect, d *schema.Resour
 			},
 		},
 		Plugins:                 plugins,
-		ServiceExecutionRoleArn: roleArn,
+		ServiceExecutionRoleArn: &roleArn,
 		WorkerConfiguration:     workerConfiguration,
 	}
 	return input, nil
