@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/kafkaconnect"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
 )
 
 func resourceAwsMskConnector() *schema.Resource {
@@ -63,11 +64,12 @@ func resourceAwsMskConnector() *schema.Resource {
 				Computed: false,
 			},
 			"bootstrap_servers": {
-				Type:     schema.TypeSet,
-				Required: true,
-				ForceNew: false,
-				Computed: false,
-				Elem:     &schema.Schema{Type: schema.TypeString},
+				Type:        schema.TypeString,
+				Required:    true,
+				ForceNew:    false,
+				Computed:    false,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Description: "the connection string with the bootstrap servers",
 			},
 			"security_groups": {
 				Type:     schema.TypeSet,
@@ -140,12 +142,13 @@ func resourceAwsMskConnectCreate(ctx context.Context, d *schema.ResourceData, me
 
 	input, err := newCreateConnectorRequest(conn, d)
 	if err != nil {
+		log.Printf("while creating connector request %s", err)
 		return diag.FromErr(err)
 	}
-
 	output, err := conn.CreateConnector(input)
 
 	if err != nil {
+		log.Printf("while creating connector %s", err)
 		return diag.FromErr(fmt.Errorf("error creating MSK Connector: %s", err))
 	}
 
@@ -155,6 +158,7 @@ func resourceAwsMskConnectCreate(ctx context.Context, d *schema.ResourceData, me
 }
 
 func resourceAwsMskConnectorRead(_ context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	log.Printf("resourceAwsMskConnectorRead")
 	conn := meta.(*AWSClient).kafkaconnectconn
 
 	input := &kafkaconnect.DescribeConnectorInput{
@@ -166,6 +170,7 @@ func resourceAwsMskConnectorRead(_ context.Context, d *schema.ResourceData, meta
 
 	if err != nil {
 		d.SetId("")
+		log.Printf("error describe connector %s", err)
 		return diag.FromErr(err)
 	}
 	d.SetId(*c.ConnectorArn)
@@ -193,6 +198,7 @@ func resourceAwsMskConnectorRead(_ context.Context, d *schema.ResourceData, meta
 	for k, v := range fields {
 		err = d.Set(k, v)
 		if err != nil {
+			log.Printf("setting %s: %s", k, err)
 			fromErr := diag.FromErr(err)
 			for _, d := range fromErr {
 				diagnostics = append(diagnostics, d)
